@@ -3,765 +3,286 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="color-scheme" content="dark">
 <title>Trading Journal</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+Thai:wght@300;400;600;700&display=swap');
-
-:root {
-–bg: #0a0a0f;
-–surface: #12121a;
-–surface2: #1a1a26;
-–border: #2a2a3a;
-–accent: #00ff88;
-–red: #ff3366;
-–gold: #ffd700;
-–text: #e0e0f0;
-–muted: #6060a0;
-–win: #00ff88;
-–loss: #ff3366;
-}
-
-- { margin:0; padding:0; box-sizing:border-box; }
-
-body {
-background: var(–bg);
-color: var(–text);
-font-family: ‘Noto Sans Thai’, sans-serif;
-min-height: 100vh;
-padding: 20px;
-}
-
-/* ─── HEADER ─── */
-.header {
-display: flex;
-align-items: center;
-justify-content: space-between;
-margin-bottom: 24px;
-padding-bottom: 16px;
-border-bottom: 1px solid var(–border);
-}
-.header-left h1 {
-font-family: ‘Space Mono’, monospace;
-font-size: 20px;
-color: var(–accent);
-letter-spacing: 2px;
-}
-.header-left p { font-size: 12px; color: var(–muted); margin-top: 2px; }
-
-.btn-add {
-background: var(–accent);
-color: #000;
-border: none;
-padding: 10px 20px;
-border-radius: 8px;
-font-family: ‘Space Mono’, monospace;
-font-size: 13px;
-font-weight: 700;
-cursor: pointer;
-transition: all 0.2s;
-}
-.btn-add:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,255,136,0.3); }
-
-/* ─── STATS ─── */
-.stats {
-display: grid;
-grid-template-columns: repeat(4, 1fr);
-gap: 12px;
-margin-bottom: 24px;
-}
-@media(max-width:600px) { .stats { grid-template-columns: repeat(2,1fr); } }
-
-.stat-card {
-background: var(–surface);
-border: 1px solid var(–border);
-border-radius: 12px;
-padding: 16px;
-position: relative;
-overflow: hidden;
-}
-.stat-card::before {
-content: ‘’;
-position: absolute;
-top: 0; left: 0; right: 0;
-height: 2px;
-background: var(–accent-line, var(–accent));
-}
-.stat-card.red::before { –accent-line: var(–red); }
-.stat-card.gold::before { –accent-line: var(–gold); }
-.stat-card.muted::before { –accent-line: var(–muted); }
-
-.stat-label { font-size: 10px; color: var(–muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-.stat-value { font-family: ‘Space Mono’, monospace; font-size: 22px; font-weight: 700; }
-.stat-value.green { color: var(–win); }
-.stat-value.red { color: var(–loss); }
-.stat-value.gold { color: var(–gold); }
-
-/* ─── FORM MODAL ─── */
-.overlay {
-display: none;
-position: fixed;
-inset: 0;
-background: rgba(0,0,0,0.8);
-z-index: 100;
-align-items: center;
-justify-content: center;
-padding: 20px;
-}
-.overlay.show { display: flex; }
-
-.modal {
-background: var(–surface);
-border: 1px solid var(–border);
-border-radius: 16px;
-width: 100%;
-max-width: 480px;
-max-height: 90vh;
-overflow-y: auto;
-padding: 24px;
-}
-.modal h2 {
-font-family: ‘Space Mono’, monospace;
-font-size: 16px;
-color: var(–accent);
-margin-bottom: 20px;
-display: flex;
-align-items: center;
-justify-content: space-between;
-}
-.close-btn { cursor: pointer; color: var(–muted); font-size: 20px; background: none; border: none; color: var(–muted); }
-
-.form-row { margin-bottom: 14px; }
-.form-row label { display: block; font-size: 11px; color: var(–muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-.form-row input,
-.form-row select,
-.form-row textarea {
-width: 100%;
-background: var(–surface2);
-border: 1px solid var(–border);
-border-radius: 8px;
-padding: 10px 12px;
-color: var(–text);
-font-family: ‘Noto Sans Thai’, sans-serif;
-font-size: 14px;
-outline: none;
-transition: border-color 0.2s;
-}
-.form-row input:focus,
-.form-row select:focus,
-.form-row textarea:focus { border-color: var(–accent); }
-.form-row textarea { resize: vertical; min-height: 70px; }
-
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-/* Direction buttons */
-.dir-btns { display: flex; gap: 8px; }
-.dir-btn {
-flex: 1;
-padding: 10px;
-border-radius: 8px;
-border: 1px solid var(–border);
-background: var(–surface2);
-color: var(–muted);
-font-family: ‘Space Mono’, monospace;
-font-size: 13px;
-font-weight: 700;
-cursor: pointer;
-transition: all 0.2s;
-text-align: center;
-}
-.dir-btn.buy.active { background: rgba(0,255,136,0.15); border-color: var(–win); color: var(–win); }
-.dir-btn.sell.active { background: rgba(255,51,102,0.15); border-color: var(–loss); color: var(–loss); }
-
-/* RR Preview */
-.rr-preview {
-background: var(–surface2);
-border: 1px solid var(–border);
-border-radius: 8px;
-padding: 12px;
-margin-top: 12px;
-}
-.rr-preview .rr-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-.rr-preview .rr-row:last-child { margin-bottom: 0; }
-.rr-preview .rr-label { font-size: 11px; color: var(–muted); text-transform: uppercase; letter-spacing: 1px; }
-.rr-preview .rr-val { font-family: ‘Space Mono’, monospace; font-size: 14px; font-weight: 700; }
-
-/* Result buttons */
-.result-btns { display: flex; gap: 8px; }
-.result-btn {
-flex: 1;
-padding: 10px;
-border-radius: 8px;
-border: 1px solid var(–border);
-background: var(–surface2);
-color: var(–muted);
-font-family: ‘Space Mono’, monospace;
-font-size: 12px;
-font-weight: 700;
-cursor: pointer;
-transition: all 0.2s;
-text-align: center;
-}
-.result-btn.win.active { background: rgba(0,255,136,0.15); border-color: var(–win); color: var(–win); }
-.result-btn.loss.active { background: rgba(255,51,102,0.15); border-color: var(–loss); color: var(–loss); }
-.result-btn.be.active { background: rgba(255,215,0,0.15); border-color: var(–gold); color: var(–gold); }
-
-.btn-save {
-width: 100%;
-padding: 14px;
-background: var(–accent);
-color: #000;
-border: none;
-border-radius: 10px;
-font-family: ‘Space Mono’, monospace;
-font-size: 14px;
-font-weight: 700;
-cursor: pointer;
-margin-top: 20px;
-transition: all 0.2s;
-}
-.btn-save:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,255,136,0.3); }
-
-/* ─── TRADE LIST ─── */
-.section-title {
-font-family: ‘Space Mono’, monospace;
-font-size: 12px;
-color: var(–muted);
-text-transform: uppercase;
-letter-spacing: 2px;
-margin-bottom: 12px;
-display: flex;
-align-items: center;
-justify-content: space-between;
-}
-
-.trade-list { display: flex; flex-direction: column; gap: 10px; }
-
-.trade-card {
-background: var(–surface);
-border: 1px solid var(–border);
-border-radius: 12px;
-padding: 16px;
-position: relative;
-overflow: hidden;
-transition: border-color 0.2s;
-}
-.trade-card:hover { border-color: var(–muted); }
-.trade-card.win { border-left: 3px solid var(–win); }
-.trade-card.loss { border-left: 3px solid var(–loss); }
-.trade-card.be { border-left: 3px solid var(–gold); }
-
-.trade-top {
-display: flex;
-align-items: center;
-justify-content: space-between;
-margin-bottom: 10px;
-}
-.trade-info { display: flex; align-items: center; gap: 10px; }
-.trade-dir {
-font-family: ‘Space Mono’, monospace;
-font-size: 11px;
-font-weight: 700;
-padding: 3px 10px;
-border-radius: 4px;
-}
-.trade-dir.buy { background: rgba(0,255,136,0.15); color: var(–win); }
-.trade-dir.sell { background: rgba(255,51,102,0.15); color: var(–loss); }
-
-.trade-symbol { font-family: ‘Space Mono’, monospace; font-size: 15px; font-weight: 700; }
-.trade-date { font-size: 11px; color: var(–muted); }
-
-.trade-result {
-font-family: ‘Space Mono’, monospace;
-font-size: 13px;
-font-weight: 700;
-padding: 4px 12px;
-border-radius: 6px;
-}
-.trade-result.win { background: rgba(0,255,136,0.15); color: var(–win); }
-.trade-result.loss { background: rgba(255,51,102,0.15); color: var(–loss); }
-.trade-result.be { background: rgba(255,215,0,0.15); color: var(–gold); }
-
-.trade-body {
-display: grid;
-grid-template-columns: repeat(4, 1fr);
-gap: 8px;
-margin-bottom: 10px;
-}
-@media(max-width:500px) { .trade-body { grid-template-columns: repeat(2,1fr); } }
-
-.trade-field { }
-.trade-field-label { font-size: 10px; color: var(–muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
-.trade-field-val { font-family: ‘Space Mono’, monospace; font-size: 13px; }
-
-.trade-reason {
-background: var(–surface2);
-border-radius: 6px;
-padding: 8px 10px;
-font-size: 12px;
-color: var(–muted);
-line-height: 1.5;
-margin-bottom: 8px;
-}
-.trade-reason strong { color: var(–text); }
-
-.trade-actions { display: flex; justify-content: flex-end; gap: 8px; }
-.btn-del {
-background: none;
-border: 1px solid var(–border);
-color: var(–muted);
-padding: 4px 12px;
-border-radius: 6px;
-font-size: 11px;
-cursor: pointer;
-transition: all 0.2s;
-}
-.btn-del:hover { border-color: var(–loss); color: var(–loss); }
-
-.empty-state {
-text-align: center;
-padding: 60px 20px;
-color: var(–muted);
-}
-.empty-state .icon { font-size: 40px; margin-bottom: 12px; }
-.empty-state p { font-size: 13px; }
-
-/* Filter tabs */
-.filter-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-.filter-tab {
-padding: 6px 14px;
-border-radius: 20px;
-border: 1px solid var(–border);
-background: none;
-color: var(–muted);
-font-size: 12px;
-cursor: pointer;
-transition: all 0.2s;
-font-family: ‘Noto Sans Thai’, sans-serif;
-}
-.filter-tab.active { border-color: var(–accent); color: var(–accent); background: rgba(0,255,136,0.08); }
-
-/* Equity curve */
-.equity-bar {
-display: flex;
-align-items: center;
-gap: 8px;
-margin-bottom: 20px;
-}
-.eq-label { font-size: 10px; color: var(–muted); white-space: nowrap; }
-.eq-track {
-flex: 1;
-height: 6px;
-background: var(–surface2);
-border-radius: 3px;
-overflow: hidden;
-}
-.eq-fill {
-height: 100%;
-border-radius: 3px;
-background: linear-gradient(90deg, var(–accent), #00aaff);
-transition: width 0.5s ease;
-}
-.eq-pct { font-family: ‘Space Mono’, monospace; font-size: 11px; color: var(–accent); }
+* { margin:0; padding:0; box-sizing:border-box; -webkit-appearance:none; }
+html, body { background-color:#0a0a0f !important; color:#e0e0f0 !important; font-family:-apple-system,sans-serif; min-height:100vh; -webkit-text-size-adjust:100%; }
+body { padding:16px; background:#0a0a0f !important; }
+.hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid #2a2a3a; }
+.hdr h1 { font-family:monospace; font-size:18px; color:#00ff88; letter-spacing:2px; }
+.hdr p { font-size:11px; color:#6060a0; margin-top:3px; }
+.btn-add { background:#00ff88 !important; color:#000 !important; border:none; padding:10px 16px; border-radius:8px; font-family:monospace; font-size:12px; font-weight:700; cursor:pointer; }
+.stats { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:14px; }
+.stat { background:#12121a !important; border:1px solid #2a2a3a; border-radius:10px; padding:14px; }
+.stat-lbl { font-size:10px; color:#6060a0; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+.stat-val { font-family:monospace; font-size:22px; font-weight:700; }
+.cg { color:#00ff88 !important; } .cr { color:#ff3366 !important; } .cy { color:#ffd700 !important; } .cw { color:#e0e0f0 !important; }
+.eq-bar { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+.eq-lbl { font-size:10px; color:#6060a0; white-space:nowrap; }
+.eq-track { flex:1; height:5px; background:#1a1a26; border-radius:3px; overflow:hidden; }
+.eq-fill { height:100%; background:linear-gradient(90deg,#00ff88,#00aaff); border-radius:3px; }
+.eq-pct { font-family:monospace; font-size:11px; color:#00ff88; }
+.filters { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+.ftab { padding:5px 12px; border-radius:20px; border:1px solid #2a2a3a; background:#0a0a0f !important; color:#6060a0 !important; font-size:11px; cursor:pointer; }
+.ftab.on { border-color:#00ff88; color:#00ff88 !important; background:rgba(0,255,136,0.08) !important; }
+.sec { display:flex; justify-content:space-between; font-family:monospace; font-size:11px; color:#6060a0; text-transform:uppercase; letter-spacing:2px; margin-bottom:10px; }
+.card { background:#12121a !important; border:1px solid #2a2a3a; border-radius:10px; padding:14px; margin-bottom:10px; }
+.card.win { border-left:3px solid #00ff88; } .card.loss { border-left:3px solid #ff3366; } .card.be { border-left:3px solid #ffd700; }
+.card-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px; }
+.dtag { font-family:monospace; font-size:11px; font-weight:700; padding:3px 8px; border-radius:4px; }
+.dtag.buy { background:rgba(0,255,136,0.15); color:#00ff88 !important; }
+.dtag.sell { background:rgba(255,51,102,0.15); color:#ff3366 !important; }
+.sym { font-family:monospace; font-size:15px; font-weight:700; color:#e0e0f0; margin:0 6px; }
+.dt { font-size:11px; color:#6060a0; }
+.rtag { font-family:monospace; font-size:12px; font-weight:700; padding:3px 10px; border-radius:6px; }
+.rtag.win { background:rgba(0,255,136,0.15); color:#00ff88 !important; }
+.rtag.loss { background:rgba(255,51,102,0.15); color:#ff3366 !important; }
+.rtag.be { background:rgba(255,215,0,0.15); color:#ffd700 !important; }
+.cgrid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:8px; }
+.fl { font-size:10px; color:#6060a0; text-transform:uppercase; letter-spacing:1px; margin-bottom:2px; }
+.fv { font-family:monospace; font-size:13px; color:#e0e0f0; }
+.rsn { background:#1a1a26 !important; border-radius:6px; padding:7px 10px; font-size:12px; color:#9090b0; margin-bottom:6px; line-height:1.5; }
+.rsn strong { color:#e0e0f0; }
+.cact { display:flex; justify-content:flex-end; gap:6px; }
+.bsm { background:#1a1a26 !important; border:1px solid #2a2a3a; color:#9090b0 !important; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer; }
+.bdel { background:#1a1a26 !important; border:1px solid #2a2a3a; color:#ff3366 !important; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer; }
+.empty { text-align:center; padding:50px 20px; color:#6060a0; }
+.empty .ico { font-size:36px; margin-bottom:10px; }
+.ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:100; overflow-y:auto; padding:20px; }
+.ov.show { display:block; }
+.modal { background:#12121a !important; border:1px solid #2a2a3a; border-radius:14px; width:100%; max-width:460px; padding:20px; margin:0 auto; }
+.mhdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+.mtitle { font-family:monospace; font-size:15px; color:#00ff88; }
+.xbtn { background:none; border:none; color:#6060a0; font-size:22px; cursor:pointer; }
+.fr { margin-bottom:12px; }
+.lbl { display:block; font-size:10px; color:#6060a0; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px; }
+input,select,textarea { width:100%; background:#1a1a26 !important; border:1px solid #2a2a3a !important; border-radius:7px; padding:10px 12px; color:#e0e0f0 !important; font-size:14px; outline:none; -webkit-appearance:none; appearance:none; box-sizing:border-box; font-family:-apple-system,sans-serif; }
+input:focus,select:focus,textarea:focus { border-color:#00ff88 !important; }
+textarea { resize:vertical; min-height:65px; }
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.dbts { display:flex; gap:8px; }
+.dbt { flex:1; padding:10px; border-radius:7px; border:1px solid #2a2a3a; background:#1a1a26 !important; color:#6060a0 !important; font-family:monospace; font-size:13px; font-weight:700; cursor:pointer; text-align:center; }
+.dbt.buy.on { border-color:#00ff88 !important; background:rgba(0,255,136,0.15) !important; color:#00ff88 !important; }
+.dbt.sell.on { border-color:#ff3366 !important; background:rgba(255,51,102,0.15) !important; color:#ff3366 !important; }
+.rrbox { background:#1a1a26 !important; border:1px solid #2a2a3a; border-radius:8px; padding:12px; margin:12px 0; }
+.rrrow { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.rrlbl { font-size:11px; color:#6060a0; text-transform:uppercase; }
+.rrval { font-family:monospace; font-size:14px; font-weight:700; }
+.rbts { display:flex; gap:8px; }
+.rbt { flex:1; padding:10px; border-radius:7px; border:1px solid #2a2a3a; background:#1a1a26 !important; color:#6060a0 !important; font-family:monospace; font-size:11px; font-weight:700; cursor:pointer; text-align:center; }
+.rbt.win.on { border-color:#00ff88 !important; background:rgba(0,255,136,0.15) !important; color:#00ff88 !important; }
+.rbt.loss.on { border-color:#ff3366 !important; background:rgba(255,51,102,0.15) !important; color:#ff3366 !important; }
+.rbt.be.on { border-color:#ffd700 !important; background:rgba(255,215,0,0.15) !important; color:#ffd700 !important; }
+.bsave { width:100%; padding:14px; background:#00ff88 !important; color:#000 !important; border:none; border-radius:10px; font-family:monospace; font-size:14px; font-weight:700; cursor:pointer; margin-top:16px; }
 </style>
-
 </head>
 <body>
 
-<!-- HEADER -->
-
-<div class="header">
-  <div class="header-left">
-    <h1>TRADING JOURNAL</h1>
-    <p>บันทึกเทรด · คำนวณ RR อัตโนมัติ</p>
-  </div>
+<div class="hdr">
+  <div><h1>TRADING JOURNAL</h1><p>บันทึกเทรด · คำนวณ RR อัตโนมัติ</p></div>
   <button class="btn-add" onclick="openModal()">+ บันทึกเทรด</button>
 </div>
 
-<!-- STATS -->
-
-<div class="stats" id="statsRow">
-  <div class="stat-card">
-    <div class="stat-label">Win Rate</div>
-    <div class="stat-value green" id="statWR">0%</div>
-  </div>
-  <div class="stat-card red">
-    <div class="stat-label">Total Trades</div>
-    <div class="stat-value" id="statTotal">0</div>
-  </div>
-  <div class="stat-card gold">
-    <div class="stat-label">Avg R:R</div>
-    <div class="stat-value gold" id="statRR">0.00</div>
-  </div>
-  <div class="stat-card muted">
-    <div class="stat-label">Profit Factor</div>
-    <div class="stat-value" id="statPF">0.00</div>
-  </div>
+<div class="stats">
+  <div class="stat"><div class="stat-lbl">Win Rate</div><div class="stat-val cg" id="sWR">0%</div></div>
+  <div class="stat"><div class="stat-lbl">Total Trades</div><div class="stat-val cw" id="sT">0</div></div>
+  <div class="stat"><div class="stat-lbl">Avg R:R</div><div class="stat-val cy" id="sRR">0.00</div></div>
+  <div class="stat"><div class="stat-lbl">Profit Factor</div><div class="stat-val cw" id="sPF">0.00</div></div>
 </div>
 
-<!-- EQUITY BAR -->
-
-<div class="equity-bar">
-  <span class="eq-label">Win Streak</span>
-  <div class="eq-track"><div class="eq-fill" id="eqFill" style="width:0%"></div></div>
-  <span class="eq-pct" id="eqPct">0%</span>
+<div class="eq-bar">
+  <span class="eq-lbl">Win Rate</span>
+  <div class="eq-track"><div class="eq-fill" id="eqF" style="width:0%"></div></div>
+  <span class="eq-pct" id="eqP">0%</span>
 </div>
 
-<!-- FILTER -->
-
-<div class="filter-tabs">
-  <button class="filter-tab active" onclick="setFilter('all',this)">ทั้งหมด</button>
-  <button class="filter-tab" onclick="setFilter('win',this)">✅ Win</button>
-  <button class="filter-tab" onclick="setFilter('loss',this)">❌ Loss</button>
-  <button class="filter-tab" onclick="setFilter('be',this)">⚪ BE</button>
-  <button class="filter-tab" onclick="setFilter('buy',this)">🟢 Buy</button>
-  <button class="filter-tab" onclick="setFilter('sell',this)">🔴 Sell</button>
+<div class="filters">
+  <button class="ftab on" onclick="sf('all',this)">ทั้งหมด</button>
+  <button class="ftab" onclick="sf('win',this)">✅ Win</button>
+  <button class="ftab" onclick="sf('loss',this)">❌ Loss</button>
+  <button class="ftab" onclick="sf('be',this)">⚪ BE</button>
+  <button class="ftab" onclick="sf('buy',this)">🟢 Buy</button>
+  <button class="ftab" onclick="sf('sell',this)">🔴 Sell</button>
 </div>
 
-<!-- TRADE LIST -->
+<div class="sec"><span>ประวัติเทรด</span><span id="tC">0 รายการ</span></div>
+<div id="tList"><div class="empty"><div class="ico">📋</div><p>ยังไม่มีรายการ<br>กด "+ บันทึกเทรด" เพื่อเริ่ม</p></div></div>
 
-<div class="section-title">
-  <span>ประวัติเทรด</span>
-  <span id="tradeCount" style="color:var(--muted)">0 รายการ</span>
-</div>
-<div class="trade-list" id="tradeList">
-  <div class="empty-state">
-    <div class="icon">📋</div>
-    <p>ยังไม่มีรายการเทรด<br>กด "+ บันทึกเทรด" เพื่อเริ่มต้น</p>
-  </div>
-</div>
-
-<!-- MODAL -->
-
-<div class="overlay" id="overlay" onclick="closeOnBg(event)">
+<div class="ov" id="ov" onclick="bgC(event)">
   <div class="modal">
-    <h2>
-      <span id="modalTitle">บันทึกเทรด</span>
-      <button class="close-btn" onclick="closeModal()">✕</button>
-    </h2>
-
-```
-<div class="form-row">
-  <label>Symbol</label>
-  <input type="text" id="fSymbol" placeholder="XAUUSD, EURUSD..." value="XAUUSD">
-</div>
-
-<div class="form-row">
-  <label>ทิศทาง</label>
-  <div class="dir-btns">
-    <button class="dir-btn buy" onclick="setDir('buy')">▲ BUY</button>
-    <button class="dir-btn sell" onclick="setDir('sell')">▼ SELL</button>
-  </div>
-</div>
-
-<div class="form-row">
-  <label>ประเภทออเดอร์</label>
-  <select id="fOrderType">
-    <option value="market">Market</option>
-    <option value="limit">Limit</option>
-    <option value="stop">Stop</option>
-  </select>
-</div>
-
-<div class="form-grid">
-  <div class="form-row">
-    <label>Entry Price</label>
-    <input type="number" id="fEntry" placeholder="0.00" step="0.01" oninput="calcRR()">
-  </div>
-  <div class="form-row">
-    <label>วันที่เทรด</label>
-    <input type="date" id="fDate">
-  </div>
-</div>
-
-<div class="form-grid">
-  <div class="form-row">
-    <label>Stop Loss (SL)</label>
-    <input type="number" id="fSL" placeholder="0.00" step="0.01" oninput="calcRR()">
-  </div>
-  <div class="form-row">
-    <label>Take Profit (TP)</label>
-    <input type="number" id="fTP" placeholder="0.00" step="0.01" oninput="calcRR()">
-  </div>
-</div>
-
-<!-- RR Preview -->
-<div class="rr-preview" id="rrPreview">
-  <div class="rr-row">
-    <span class="rr-label">Risk (SL)</span>
-    <span class="rr-val" id="rrRisk" style="color:var(--loss)">-</span>
-  </div>
-  <div class="rr-row">
-    <span class="rr-label">Reward (TP)</span>
-    <span class="rr-val" id="rrReward" style="color:var(--win)">-</span>
-  </div>
-  <div class="rr-row" style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px;">
-    <span class="rr-label">R:R Ratio</span>
-    <span class="rr-val" id="rrRatio" style="color:var(--gold);font-size:18px">-</span>
-  </div>
-</div>
-
-<div class="form-row" style="margin-top:14px">
-  <label>ผลลัพธ์</label>
-  <div class="result-btns">
-    <button class="result-btn win" onclick="setResult('win')">✅ WIN</button>
-    <button class="result-btn loss" onclick="setResult('loss')">❌ LOSS</button>
-    <button class="result-btn be" onclick="setResult('be')">⚪ BE</button>
-  </div>
-</div>
-
-<div class="form-row">
-  <label>เหตุผลที่เข้า</label>
-  <textarea id="fReasonIn" placeholder="เช่น OB 4H + MSS 15m + Volume สูง..."></textarea>
-</div>
-
-<div class="form-row">
-  <label>เหตุผลที่แพ้/ชนะ</label>
-  <textarea id="fReasonOut" placeholder="เช่น โดน Liquidity Grab, SL ไม่ถูกต้อง..."></textarea>
-</div>
-
-<button class="btn-save" onclick="saveTrade()">💾 บันทึก</button>
-```
-
+    <div class="mhdr"><span class="mtitle" id="mT">บันทึกเทรด</span><button class="xbtn" onclick="closeModal()">✕</button></div>
+    <div class="fr"><label class="lbl">Symbol</label><input type="text" id="fS" value="XAUUSD"></div>
+    <div class="fr"><label class="lbl">ทิศทาง</label>
+      <div class="dbts">
+        <button class="dbt buy on" id="dB" onclick="sd('buy')">▲ BUY</button>
+        <button class="dbt sell" id="dSe" onclick="sd('sell')">▼ SELL</button>
+      </div>
+    </div>
+    <div class="fr"><label class="lbl">ประเภทออเดอร์</label>
+      <select id="fTy"><option value="market">Market</option><option value="limit">Limit</option><option value="stop">Stop</option></select>
+    </div>
+    <div class="g2">
+      <div class="fr"><label class="lbl">Entry Price</label><input type="number" id="fE" placeholder="0.00" step="0.01" oninput="cRR()"></div>
+      <div class="fr"><label class="lbl">วันที่เทรด</label><input type="date" id="fD"></div>
+    </div>
+    <div class="g2">
+      <div class="fr"><label class="lbl">Stop Loss (SL)</label><input type="number" id="fSL" placeholder="0.00" step="0.01" oninput="cRR()"></div>
+      <div class="fr"><label class="lbl">Take Profit (TP)</label><input type="number" id="fTP" placeholder="0.00" step="0.01" oninput="cRR()"></div>
+    </div>
+    <div class="rrbox">
+      <div class="rrrow"><span class="rrlbl">Risk (SL)</span><span class="rrval cr" id="rRisk">-</span></div>
+      <div class="rrrow"><span class="rrlbl">Reward (TP)</span><span class="rrval cg" id="rRew">-</span></div>
+      <div class="rrrow" style="border-top:1px solid #2a2a3a;padding-top:8px;margin-top:4px;margin-bottom:0">
+        <span class="rrlbl">R:R Ratio</span><span class="rrval cy" id="rRatio" style="font-size:18px">-</span>
+      </div>
+    </div>
+    <div class="fr"><label class="lbl">ผลลัพธ์</label>
+      <div class="rbts">
+        <button class="rbt win" id="rW" onclick="sr('win')">✅ WIN</button>
+        <button class="rbt loss" id="rL" onclick="sr('loss')">❌ LOSS</button>
+        <button class="rbt be" id="rB" onclick="sr('be')">⚪ BE</button>
+      </div>
+    </div>
+    <div class="fr"><label class="lbl">เหตุผลที่เข้า</label><textarea id="fRI" placeholder="เช่น OB 4H + MSS 15m + Volume สูง..."></textarea></div>
+    <div class="fr"><label class="lbl">เหตุผลที่แพ้/ชนะ</label><textarea id="fRO" placeholder="เช่น โดน Liquidity Grab, ไม่รอ MSS..."></textarea></div>
+    <button class="bsave" onclick="saveTrade()">💾 บันทึก</button>
   </div>
 </div>
 
 <script>
-  let trades = JSON.parse(localStorage.getItem('tradeJournal') || '[]')
-  let currentDir = 'buy'
-  let currentResult = ''
-  let currentFilter = 'all'
-  let editingId = null
-
-  // Set today's date
-  document.getElementById('fDate').value = new Date().toISOString().split('T')[0]
-
-  function openModal(id = null) {
-    editingId = id
-    if (id !== null) {
-      const t = trades.find(x => x.id === id)
-      if (t) {
-        document.getElementById('modalTitle').textContent = 'แก้ไขเทรด'
-        document.getElementById('fSymbol').value = t.symbol
-        document.getElementById('fEntry').value = t.entry
-        document.getElementById('fSL').value = t.sl
-        document.getElementById('fTP').value = t.tp
-        document.getElementById('fDate').value = t.date
-        document.getElementById('fOrderType').value = t.orderType
-        document.getElementById('fReasonIn').value = t.reasonIn
-        document.getElementById('fReasonOut').value = t.reasonOut
-        setDir(t.dir)
-        setResult(t.result)
-        calcRR()
-      }
-    } else {
-      document.getElementById('modalTitle').textContent = 'บันทึกเทรด'
-      resetForm()
-    }
-    document.getElementById('overlay').classList.add('show')
+const KEY='tj_v3'
+let trades=[];try{trades=JSON.parse(localStorage.getItem(KEY)||'[]')}catch{}
+let dir='buy',res='',filt='all',eid=null
+document.getElementById('fD').value=new Date().toISOString().split('T')[0]
+function sv(){try{localStorage.setItem(KEY,JSON.stringify(trades))}catch{}}
+function openModal(id){
+  eid=id||null
+  if(id){
+    const t=trades.find(x=>x.id===id)
+    document.getElementById('mT').textContent='แก้ไขเทรด'
+    document.getElementById('fS').value=t.symbol
+    document.getElementById('fE').value=t.entry
+    document.getElementById('fSL').value=t.sl
+    document.getElementById('fTP').value=t.tp
+    document.getElementById('fD').value=t.date
+    document.getElementById('fTy').value=t.type
+    document.getElementById('fRI').value=t.rin
+    document.getElementById('fRO').value=t.rout
+    sd(t.dir);sr(t.result);cRR()
+  }else{
+    document.getElementById('mT').textContent='บันทึกเทรด'
+    rf()
   }
-
-  function closeModal() {
-    document.getElementById('overlay').classList.remove('show')
-    resetForm()
-  }
-
-  function closeOnBg(e) {
-    if (e.target === document.getElementById('overlay')) closeModal()
-  }
-
-  function resetForm() {
-    document.getElementById('fSymbol').value = 'XAUUSD'
-    document.getElementById('fEntry').value = ''
-    document.getElementById('fSL').value = ''
-    document.getElementById('fTP').value = ''
-    document.getElementById('fDate').value = new Date().toISOString().split('T')[0]
-    document.getElementById('fOrderType').value = 'market'
-    document.getElementById('fReasonIn').value = ''
-    document.getElementById('fReasonOut').value = ''
-    currentDir = 'buy'
-    currentResult = ''
-    document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'))
-    document.querySelector('.dir-btn.buy').classList.add('active')
-    document.querySelectorAll('.result-btn').forEach(b => b.classList.remove('active'))
-    document.getElementById('rrRisk').textContent = '-'
-    document.getElementById('rrReward').textContent = '-'
-    document.getElementById('rrRatio').textContent = '-'
-    editingId = null
-  }
-
-  function setDir(d) {
-    currentDir = d
-    document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'))
-    document.querySelector('.dir-btn.' + d).classList.add('active')
-    calcRR()
-  }
-
-  function setResult(r) {
-    currentResult = r
-    document.querySelectorAll('.result-btn').forEach(b => b.classList.remove('active'))
-    document.querySelector('.result-btn.' + r).classList.add('active')
-  }
-
-  function calcRR() {
-    const entry = parseFloat(document.getElementById('fEntry').value)
-    const sl    = parseFloat(document.getElementById('fSL').value)
-    const tp    = parseFloat(document.getElementById('fTP').value)
-
-    if (isNaN(entry) || isNaN(sl) || isNaN(tp)) {
-      document.getElementById('rrRisk').textContent = '-'
-      document.getElementById('rrReward').textContent = '-'
-      document.getElementById('rrRatio').textContent = '-'
-      return
-    }
-
-    const risk   = Math.abs(entry - sl)
-    const reward = Math.abs(tp - entry)
-    const rr     = risk > 0 ? reward / risk : 0
-
-    document.getElementById('rrRisk').textContent   = risk.toFixed(2) + ' pts'
-    document.getElementById('rrReward').textContent = reward.toFixed(2) + ' pts'
-    document.getElementById('rrRatio').textContent  = '1 : ' + rr.toFixed(2)
-    document.getElementById('rrRatio').style.color  = rr >= 2 ? 'var(--win)' : rr >= 1 ? 'var(--gold)' : 'var(--loss)'
-  }
-
-  function saveTrade() {
-    const symbol    = document.getElementById('fSymbol').value.trim().toUpperCase()
-    const entry     = parseFloat(document.getElementById('fEntry').value)
-    const sl        = parseFloat(document.getElementById('fSL').value)
-    const tp        = parseFloat(document.getElementById('fTP').value)
-    const date      = document.getElementById('fDate').value
-    const orderType = document.getElementById('fOrderType').value
-    const reasonIn  = document.getElementById('fReasonIn').value.trim()
-    const reasonOut = document.getElementById('fReasonOut').value.trim()
-
-    if (!symbol || isNaN(entry) || isNaN(sl) || isNaN(tp) || !date) {
-      alert('กรุณากรอก Symbol, Entry, SL, TP และวันที่')
-      return
-    }
-    if (!currentResult) {
-      alert('กรุณาเลือกผลลัพธ์ (Win/Loss/BE)')
-      return
-    }
-
-    const risk   = Math.abs(entry - sl)
-    const reward = Math.abs(tp - entry)
-    const rr     = risk > 0 ? reward / risk : 0
-
-    if (editingId !== null) {
-      const idx = trades.findIndex(x => x.id === editingId)
-      if (idx !== -1) {
-        trades[idx] = { ...trades[idx], symbol, dir: currentDir, orderType, entry, sl, tp, date, result: currentResult, reasonIn, reasonOut, risk, reward, rr }
-      }
-    } else {
-      trades.unshift({ id: Date.now(), symbol, dir: currentDir, orderType, entry, sl, tp, date, result: currentResult, reasonIn, reasonOut, risk, reward, rr })
-    }
-
-    localStorage.setItem('tradeJournal', JSON.stringify(trades))
-    closeModal()
-    renderAll()
-  }
-
-  function deleteTrade(id) {
-    if (!confirm('ลบรายการนี้?')) return
-    trades = trades.filter(x => x.id !== id)
-    localStorage.setItem('tradeJournal', JSON.stringify(trades))
-    renderAll()
-  }
-
-  function setFilter(f, el) {
-    currentFilter = f
-    document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'))
-    el.classList.add('active')
-    renderAll()
-  }
-
-  function renderAll() {
-    renderStats()
-    renderTrades()
-  }
-
-  function renderStats() {
-    const wins   = trades.filter(t => t.result === 'win').length
-    const losses = trades.filter(t => t.result === 'loss').length
-    const total  = trades.length
-    const wr     = total > 0 ? (wins / total * 100).toFixed(1) : 0
-    const avgRR  = total > 0 ? (trades.reduce((a,t) => a + t.rr, 0) / total).toFixed(2) : '0.00'
-    const totalReward = trades.filter(t => t.result === 'win').reduce((a,t) => a + t.reward, 0)
-    const totalRisk   = trades.filter(t => t.result === 'loss').reduce((a,t) => a + t.risk, 0)
-    const pf = totalRisk > 0 ? (totalReward / totalRisk).toFixed(2) : totalReward > 0 ? '∞' : '0.00'
-
-    document.getElementById('statWR').textContent    = wr + '%'
-    document.getElementById('statTotal').textContent = total
-    document.getElementById('statRR').textContent    = avgRR
-    document.getElementById('statPF').textContent    = pf
-
-    const wrNum = parseFloat(wr)
-    document.getElementById('eqFill').style.width = wrNum + '%'
-    document.getElementById('eqPct').textContent  = wr + '%'
-  }
-
-  function renderTrades() {
-    let filtered = trades
-    if (currentFilter === 'win')  filtered = trades.filter(t => t.result === 'win')
-    if (currentFilter === 'loss') filtered = trades.filter(t => t.result === 'loss')
-    if (currentFilter === 'be')   filtered = trades.filter(t => t.result === 'be')
-    if (currentFilter === 'buy')  filtered = trades.filter(t => t.dir === 'buy')
-    if (currentFilter === 'sell') filtered = trades.filter(t => t.dir === 'sell')
-
-    document.getElementById('tradeCount').textContent = filtered.length + ' รายการ'
-
-    const list = document.getElementById('tradeList')
-    if (filtered.length === 0) {
-      list.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>ไม่มีรายการในหมวดนี้</p></div>`
-      return
-    }
-
-    list.innerHTML = filtered.map(t => {
-      const resultLabel = t.result === 'win' ? '✅ WIN' : t.result === 'loss' ? '❌ LOSS' : '⚪ BE'
-      const rrColor = t.rr >= 2 ? 'var(--win)' : t.rr >= 1 ? 'var(--gold)' : 'var(--loss)'
-      const orderLabel = t.orderType === 'limit' ? 'Limit' : t.orderType === 'stop' ? 'Stop' : 'Market'
-      return `
-      <div class="trade-card ${t.result}">
-        <div class="trade-top">
-          <div class="trade-info">
-            <span class="trade-dir ${t.dir}">${t.dir === 'buy' ? '▲ BUY' : '▼ SELL'}</span>
-            <span class="trade-symbol">${t.symbol}</span>
-            <span class="trade-date">${t.date} · ${orderLabel}</span>
-          </div>
-          <span class="trade-result ${t.result}">${resultLabel}</span>
+  document.getElementById('ov').classList.add('show')
+}
+function closeModal(){document.getElementById('ov').classList.remove('show');rf()}
+function bgC(e){if(e.target===document.getElementById('ov'))closeModal()}
+function rf(){
+  document.getElementById('fS').value='XAUUSD'
+  ;['fE','fSL','fTP'].forEach(x=>document.getElementById(x).value='')
+  document.getElementById('fD').value=new Date().toISOString().split('T')[0]
+  document.getElementById('fTy').value='market'
+  ;['fRI','fRO'].forEach(x=>document.getElementById(x).value='')
+  ;['rRisk','rRew','rRatio'].forEach(x=>document.getElementById(x).textContent='-')
+  sd('buy');res=''
+  ;['rW','rL','rB'].forEach(x=>document.getElementById(x).classList.remove('on'))
+  eid=null
+}
+function sd(d){
+  dir=d
+  document.getElementById('dB').className='dbt buy'+(d==='buy'?' on':'')
+  document.getElementById('dSe').className='dbt sell'+(d==='sell'?' on':'')
+}
+function sr(r){
+  res=r
+  ;['rW','rL','rB'].forEach(x=>document.getElementById(x).classList.remove('on'))
+  const m={win:'rW',loss:'rL',be:'rB'}
+  document.getElementById(m[r]).classList.add('on')
+}
+function cRR(){
+  const e=parseFloat(document.getElementById('fE').value)
+  const s=parseFloat(document.getElementById('fSL').value)
+  const t=parseFloat(document.getElementById('fTP').value)
+  if(isNaN(e)||isNaN(s)||isNaN(t))return
+  const risk=Math.abs(e-s),rew=Math.abs(t-e),rr=risk>0?rew/risk:0
+  document.getElementById('rRisk').textContent=risk.toFixed(2)+' pts'
+  document.getElementById('rRew').textContent=rew.toFixed(2)+' pts'
+  const el=document.getElementById('rRatio')
+  el.textContent='1 : '+rr.toFixed(2)
+  el.className='rrval '+(rr>=2?'cg':rr>=1?'cy':'cr')
+}
+function saveTrade(){
+  const sym=document.getElementById('fS').value.trim().toUpperCase()
+  const entry=parseFloat(document.getElementById('fE').value)
+  const sl=parseFloat(document.getElementById('fSL').value)
+  const tp=parseFloat(document.getElementById('fTP').value)
+  const date=document.getElementById('fD').value
+  const type=document.getElementById('fTy').value
+  const rin=document.getElementById('fRI').value.trim()
+  const rout=document.getElementById('fRO').value.trim()
+  if(!sym||isNaN(entry)||isNaN(sl)||isNaN(tp)||!date){alert('กรอกข้อมูลให้ครบครับ');return}
+  if(!res){alert('เลือกผลลัพธ์ด้วยครับ');return}
+  const risk=Math.abs(entry-sl),rew=Math.abs(tp-entry),rr=risk>0?rew/risk:0
+  const t={id:eid||Date.now(),symbol:sym,dir,type,entry,sl,tp,date,result:res,rin,rout,risk,reward:rew,rr}
+  if(eid)trades=trades.map(x=>x.id===eid?t:x)
+  else trades.unshift(t)
+  sv();closeModal();ra()
+}
+function delT(id){if(!confirm('ลบรายการนี้?'))return;trades=trades.filter(x=>x.id!==id);sv();ra()}
+function sf(f,el){filt=f;document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('on'));el.classList.add('on');ra()}
+function ra(){
+  const wins=trades.filter(t=>t.result==='win').length,total=trades.length
+  const wr=total>0?(wins/total*100).toFixed(1):0
+  const avgRR=total>0?(trades.reduce((a,t)=>a+t.rr,0)/total).toFixed(2):'0.00'
+  const tR=trades.filter(t=>t.result==='win').reduce((a,t)=>a+t.reward,0)
+  const tRk=trades.filter(t=>t.result==='loss').reduce((a,t)=>a+t.risk,0)
+  const pf=tRk>0?(tR/tRk).toFixed(2):tR>0?'∞':'0.00'
+  document.getElementById('sWR').textContent=wr+'%'
+  document.getElementById('sT').textContent=total
+  document.getElementById('sRR').textContent=avgRR
+  document.getElementById('sPF').textContent=pf
+  document.getElementById('eqF').style.width=wr+'%'
+  document.getElementById('eqP').textContent=wr+'%'
+  let list=trades
+  if(filt==='win')list=trades.filter(t=>t.result==='win')
+  else if(filt==='loss')list=trades.filter(t=>t.result==='loss')
+  else if(filt==='be')list=trades.filter(t=>t.result==='be')
+  else if(filt==='buy')list=trades.filter(t=>t.dir==='buy')
+  else if(filt==='sell')list=trades.filter(t=>t.dir==='sell')
+  document.getElementById('tC').textContent=list.length+' รายการ'
+  const el=document.getElementById('tList')
+  if(!list.length){el.innerHTML='<div class="empty"><div class="ico">📋</div><p>ไม่มีรายการในหมวดนี้</p></div>';return}
+  el.innerHTML=list.map(t=>{
+    const rl=t.result==='win'?'✅ WIN':t.result==='loss'?'❌ LOSS':'⚪ BE'
+    const rc=t.rr>=2?'cg':t.rr>=1?'cy':'cr'
+    return`<div class="card ${t.result}">
+      <div class="card-top">
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+          <span class="dtag ${t.dir}">${t.dir==='buy'?'▲ BUY':'▼ SELL'}</span>
+          <span class="sym">${t.symbol}</span>
+          <span class="dt">${t.date} · ${t.type}</span>
         </div>
-        <div class="trade-body">
-          <div class="trade-field">
-            <div class="trade-field-label">Entry</div>
-            <div class="trade-field-val">${t.entry}</div>
-          </div>
-          <div class="trade-field">
-            <div class="trade-field-label">SL</div>
-            <div class="trade-field-val" style="color:var(--loss)">${t.sl}</div>
-          </div>
-          <div class="trade-field">
-            <div class="trade-field-label">TP</div>
-            <div class="trade-field-val" style="color:var(--win)">${t.tp}</div>
-          </div>
-          <div class="trade-field">
-            <div class="trade-field-label">R:R</div>
-            <div class="trade-field-val" style="color:${rrColor}">1:${t.rr.toFixed(2)}</div>
-          </div>
-        </div>
-        ${t.reasonIn ? `<div class="trade-reason"><strong>เหตุผลเข้า:</strong> ${t.reasonIn}</div>` : ''}
-        ${t.reasonOut ? `<div class="trade-reason"><strong>เหตุผลแพ้/ชนะ:</strong> ${t.reasonOut}</div>` : ''}
-        <div class="trade-actions">
-          <button class="btn-del" onclick="openModal(${t.id})">✏️ แก้ไข</button>
-          <button class="btn-del" onclick="deleteTrade(${t.id})">🗑️ ลบ</button>
-        </div>
-      </div>`
-    }).join('')
-  }
-
-  renderAll()
+        <span class="rtag ${t.result}">${rl}</span>
+      </div>
+      <div class="cgrid">
+        <div><div class="fl">Entry</div><div class="fv">${t.entry}</div></div>
+        <div><div class="fl">SL</div><div class="fv cr">${t.sl}</div></div>
+        <div><div class="fl">TP</div><div class="fv cg">${t.tp}</div></div>
+        <div><div class="fl">R:R</div><div class="fv ${rc}">1:${t.rr.toFixed(2)}</div></div>
+      </div>
+      ${t.rin?`<div class="rsn"><strong>เหตุผลเข้า:</strong> ${t.rin}</div>`:''}
+      ${t.rout?`<div class="rsn"><strong>เหตุผลแพ้/ชนะ:</strong> ${t.rout}</div>`:''}
+      <div class="cact">
+        <button class="bsm" onclick="openModal(${t.id})">✏️ แก้ไข</button>
+        <button class="bdel" onclick="delT(${t.id})">🗑️ ลบ</button>
+      </div>
+    </div>`
+  }).join('')
+}
+ra()
 </script>
 
 </body>
 </html>
-```
