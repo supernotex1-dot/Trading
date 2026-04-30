@@ -1,0 +1,280 @@
+//@version=6
+indicator("SMC 0-1-2 Setup", "SMC 0-1-2", overlay=true,
+         max_lines_count=500, max_boxes_count=500, max_labels_count=500)
+
+// ══════════════════════════════════════════════════════════════
+// INPUTS
+// ══════════════════════════════════════════════════════════════
+grp1 = "⚙️ ตั้งค่า"
+grp2 = "🎨 สี"
+
+sw_len  = input.int(5,  "Swing Length (bar ซ้าย = ขวา)", minval=2, maxval=20, group=grp1,
+            tooltip="จำนวน bar ซ้าย-ขวา เพื่อยืนยัน Swing High/Low\nค่าน้อย = sensitive มาก | ค่ามาก = แม่นขึ้น")
+c_bull  = input.color(#00ff88, "Bull Color (ขาขึ้น)", group=grp2)
+c_bear  = input.color(#ff3366, "Bear Color (ขาลง)",   group=grp2)
+show_sw = input.bool(false, "แสดง Swing Dots",        group=grp2)
+show_bg = input.bool(true,  "แสดง Background เมื่อรอ Entry", group=grp2)
+
+// ══════════════════════════════════════════════════════════════
+// PIVOT DETECTION
+// ══════════════════════════════════════════════════════════════
+ph = ta.pivothigh(high, sw_len, sw_len)
+pl = ta.pivotlow(low,   sw_len, sw_len)
+
+// เก็บ swing ล่าสุด 2 อัน
+var float sh1   = na
+var int   sh1_b = na
+var float sh2   = na
+var int   sh2_b = na
+var float sl1   = na
+var int   sl1_b = na
+var float sl2   = na
+var int   sl2_b = na
+
+if not na(ph)
+    sh2   := sh1
+    sh2_b := sh1_b
+    sh1   := ph
+    sh1_b := bar_index[sw_len]
+
+if not na(pl)
+    sl2   := sl1
+    sl2_b := sl1_b
+    sl1   := pl
+    sl1_b := bar_index[sw_len]
+
+// ══════════════════════════════════════════════════════════════
+// ROLLING OB TRACKING
+// อัปเดตทุก bar — จับ ณ ตอน BOS เกิด
+//
+// Bullish OB = แท่งแดงสุดท้าย (close < open)
+//   Zone = low ถึง open ของแท่งนั้น
+//
+// Bearish OB = แท่งเขียวสุดท้าย (close > open)
+//   Zone = open ถึง high ของแท่งนั้น
+// ══════════════════════════════════════════════════════════════
+var float ob_b_top = na
+var float ob_b_bot = na
+var int   ob_b_i   = na
+var float ob_s_top = na
+var float ob_s_bot = na
+var int   ob_s_i   = na
+
+if close < open
+    ob_b_top := open
+    ob_b_bot := low
+    ob_b_i   := bar_index
+
+if close > open
+    ob_s_top := high
+    ob_s_bot := open
+    ob_s_i   := bar_index
+
+// ══════════════════════════════════════════════════════════════
+// BULL STATE MACHINE
+//
+// State 0 (Idle) → รอ MSS
+//   MSS เกิดเมื่อ: close ทะลุ Swing High เก่า
+//   Origin (0) = Swing Low ล่าสุดก่อน MSS
+//
+// State 1 (After MSS) → รอ BOS
+//   BOS เกิดเมื่อ: มี Swing High ใหม่ (หลัง MSS) แล้ว close ทะลุขึ้นไปอีก
+//   OB = แท่งแดงสุดท้ายก่อน BOS impulse
+//
+// State 2 (After BOS) → รอ Pullback เข้า OB = Point 2 = Entry
+// ══════════════════════════════════════════════════════════════
+var int   bst       = 0
+var float b0        = na
+var int   b0_b      = na
+var int   b_mss_shb = na
+var float b_bos_lvl = na
+var int   b_bos_b   = na
+var float b_obt     = na
+var float b_obb     = na
+var int   b_ob_i    = na
+
+// State 0 → 1: MSS
+bull_mss = bst == 0 and not na(sh1) and not na(sl1) and close > sh1
+if bull_mss
+    bst       := 1
+    b0        := sl1
+    b0_b      := sl1_b
+    b_mss_shb := sh1_b
+
+// State 1 → 2: BOS
+// ต้องมี swing high ใหม่เกิดขึ้น *หลัง* MSS (sh1_b > b_mss_shb)
+// แล้ว close ทะลุขึ้นไปอีกครั้ง = BOS
+bull_bos = bst == 1 and not na(sh1) and sh1_b > b_mss_shb and close > sh1
+if bull_bos
+    bst       := 2
+    b_bos_lvl := sh1
+    b_bos_b   := sh1_b
+    b_obt     := ob_b_top
+    b_obb     := ob_b_bot
+    b_ob_i    := ob_b_i
+
+// State 2 → Signal: Pullback เข้า OB
+bull_entry = bst == 2 and not na(b_obt) and not na(b_obb) and
+             low <= b_obt and high >= b_obb
+if bull_entry
+    bst := 0
+
+// ══════════════════════════════════════════════════════════════
+// BEAR STATE MACHINE
+//
+// MSS เกิดเมื่อ close ทะลุลงผ่าน Swing Low เก่า
+// Origin (0) = Swing High ล่าสุด
+// BOS = Swing Low ใหม่เกิด แล้ว close ทะลุลงอีก
+// OB = แท่งเขียวสุดท้ายก่อน BOS impulse ขาลง
+// Entry = ราคา Pullback ขึ้นมาแตะ Bearish OB
+// ══════════════════════════════════════════════════════════════
+var int   rst       = 0
+var float r0        = na
+var int   r0_b      = na
+var int   r_mss_slb = na
+var float r_bos_lvl = na
+var int   r_bos_b   = na
+var float r_obt     = na
+var float r_obb     = na
+var int   r_ob_i    = na
+
+// State 0 → 1: MSS
+bear_mss = rst == 0 and not na(sl1) and not na(sh1) and close < sl1
+if bear_mss
+    rst       := 1
+    r0        := sh1
+    r0_b      := sh1_b
+    r_mss_slb := sl1_b
+
+// State 1 → 2: BOS
+bear_bos = rst == 1 and not na(sl1) and sl1_b > r_mss_slb and close < sl1
+if bear_bos
+    rst       := 2
+    r_bos_lvl := sl1
+    r_bos_b   := sl1_b
+    r_obt     := ob_s_top
+    r_obb     := ob_s_bot
+    r_ob_i    := ob_s_i
+
+// State 2 → Signal: Pullback เข้า OB
+bear_entry = rst == 2 and not na(r_obt) and not na(r_obb) and
+             high >= r_obb and low <= r_obt
+if bear_entry
+    rst := 0
+
+// ══════════════════════════════════════════════════════════════
+// PLOTTING
+// ══════════════════════════════════════════════════════════════
+
+// Background: แสดงเมื่อกำลังรอ Entry
+bgcolor(show_bg and bst == 2 ? color.new(c_bull, 93) : na, title="Bull Watch BG")
+bgcolor(show_bg and rst == 2 ? color.new(c_bear, 93) : na, title="Bear Watch BG")
+
+// Swing Dots (optional)
+plotshape(show_sw and not na(ph), "Swing High ●",
+          shape.circle, location.abovebar, color.new(color.gray, 50),
+          size=size.tiny, offset=-sw_len)
+plotshape(show_sw and not na(pl), "Swing Low ●",
+          shape.circle, location.belowbar, color.new(color.gray, 50),
+          size=size.tiny, offset=-sw_len)
+
+// Entry Signals
+plotshape(bull_entry, "Bull Entry ▲",
+          shape.triangleup, location.belowbar, c_bull, size=size.normal)
+plotshape(bear_entry, "Bear Entry ▼",
+          shape.triangledown, location.abovebar, c_bear, size=size.normal)
+
+// Point 0: Origin Label
+if bull_mss
+    label.new(b0_b, b0, "0",
+              xloc=xloc.bar_index, yloc=yloc.price,
+              style=label.style_label_up,
+              color=color.new(c_bull, 75), textcolor=c_bull, size=size.small)
+
+if bear_mss
+    label.new(r0_b, r0, "0",
+              xloc=xloc.bar_index, yloc=yloc.price,
+              style=label.style_label_down,
+              color=color.new(c_bear, 75), textcolor=c_bear, size=size.small)
+
+// Point 1: BOS Label + OB Box + BOS Line
+if bull_bos
+    label.new(b_bos_b, b_bos_lvl, "1  BOS ▲",
+              xloc=xloc.bar_index, yloc=yloc.price,
+              style=label.style_label_down,
+              color=color.new(c_bull, 75), textcolor=c_bull, size=size.small)
+    if not na(b_obt) and not na(b_obb) and not na(b_ob_i) and b_ob_i < bar_index
+        box.new(b_ob_i, b_obt, bar_index + 50, b_obb,
+                border_color=c_bull,
+                bgcolor=color.new(c_bull, 85),
+                border_width=1,
+                border_style=line.style_dashed)
+    line.new(b_bos_b, b_bos_lvl, bar_index + 50, b_bos_lvl,
+             color=color.new(c_bull, 55), style=line.style_dashed, width=1)
+
+if bear_bos
+    label.new(r_bos_b, r_bos_lvl, "1  BOS ▼",
+              xloc=xloc.bar_index, yloc=yloc.price,
+              style=label.style_label_up,
+              color=color.new(c_bear, 75), textcolor=c_bear, size=size.small)
+    if not na(r_obt) and not na(r_obb) and not na(r_ob_i) and r_ob_i < bar_index
+        box.new(r_ob_i, r_obt, bar_index + 50, r_obb,
+                border_color=c_bear,
+                bgcolor=color.new(c_bear, 85),
+                border_width=1,
+                border_style=line.style_dashed)
+    line.new(r_bos_b, r_bos_lvl, bar_index + 50, r_bos_lvl,
+             color=color.new(c_bear, 55), style=line.style_dashed, width=1)
+
+// Point 2: Entry Label + SL/TP Lines
+if bull_entry
+    b_sl = b_obb
+    b_tp = b_bos_lvl + (b_bos_lvl - b_obb)
+    label.new(bar_index, low, "2  BUY ▲",
+              xloc=xloc.bar_index, yloc=yloc.price,
+              style=label.style_label_up,
+              color=c_bull, textcolor=color.black, size=size.small)
+    line.new(bar_index, b_sl, bar_index + 20, b_sl,
+             color=c_bear, width=2, style=line.style_solid)
+    label.new(bar_index + 20, b_sl, "SL",
+              xloc=xloc.bar_index,
+              style=label.style_label_right,
+              color=c_bear, textcolor=color.white, size=size.tiny)
+    line.new(bar_index, b_tp, bar_index + 20, b_tp,
+             color=c_bull, width=2, style=line.style_solid)
+    label.new(bar_index + 20, b_tp, "TP",
+              xloc=xloc.bar_index,
+              style=label.style_label_right,
+              color=c_bull, textcolor=color.black, size=size.tiny)
+
+if bear_entry
+    r_sl = r_obt
+    r_tp = r_bos_lvl - (r_obt - r_bos_lvl)
+    label.new(bar_index, high, "2  SELL ▼",
+              xloc=xloc.bar_index, yloc=yloc.price,
+              style=label.style_label_down,
+              color=c_bear, textcolor=color.white, size=size.small)
+    line.new(bar_index, r_sl, bar_index + 20, r_sl,
+             color=c_bear, width=2, style=line.style_solid)
+    label.new(bar_index + 20, r_sl, "SL",
+              xloc=xloc.bar_index,
+              style=label.style_label_right,
+              color=c_bear, textcolor=color.white, size=size.tiny)
+    line.new(bar_index, r_tp, bar_index + 20, r_tp,
+             color=c_bull, width=2, style=line.style_solid)
+    label.new(bar_index + 20, r_tp, "TP",
+              xloc=xloc.bar_index,
+              style=label.style_label_right,
+              color=c_bull, textcolor=color.black, size=size.tiny)
+
+// ══════════════════════════════════════════════════════════════
+// ALERTS
+// ══════════════════════════════════════════════════════════════
+alertcondition(bull_entry, "0-1-2 Bull Entry ▲",
+               "SMC 0-1-2: BUY — ราคาเข้า Bullish OB (Point 2)")
+alertcondition(bear_entry, "0-1-2 Bear Entry ▼",
+               "SMC 0-1-2: SELL — ราคาเข้า Bearish OB (Point 2)")
+alertcondition(bull_bos,   "0-1-2 Bull BOS",
+               "SMC 0-1-2: Bullish BOS เกิดแล้ว — รอ Pullback เข้า OB")
+alertcondition(bear_bos,   "0-1-2 Bear BOS",
+               "SMC 0-1-2: Bearish BOS เกิดแล้ว — รอ Pullback เข้า OB")
